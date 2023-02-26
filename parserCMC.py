@@ -9,10 +9,11 @@ from bs4 import BeautifulSoup
 
 
 class TradePairInfo:
-    def __init__(self, url_, price_, volume_):
+    def __init__(self, url_, price_, volume_percent_, volume_usd_):
         self.url = url_
         self.price = price_
-        self.volume = volume_
+        self.volume_percent = volume_percent_
+        self.volume_usd = volume_usd_
 
     def get_price(self):
         return self.price
@@ -20,8 +21,11 @@ class TradePairInfo:
     def get_url(self):
         return self.url
 
-    def get_volume(self):
-        return self.volume
+    def get_volume_percent(self):
+        return self.volume_percent
+
+    def get_volume_usd(self):
+        return self.volume_usd
 
 
 def get_cmc_link(url_from_message):
@@ -58,16 +62,17 @@ def create_trade_pairs_list(coin_url):
     soup = BeautifulSoup(driver.page_source, 'lxml')
     driver.close()
     for table_row in soup.find('table', {'class': 'sc-f7a61dda-3 iPOptk cmc-table '}).find_all('tr'):
-        url, price, volume = '', 0.0, 0.0
+        url, price, volume_percent, volume_usd = '', 0.0, 0.0, 0.0
         try:
             url = str(table_row.find('div', {'class': 'sc-8bac979a-1 liaGEs'}).find('a').get('href'))
             price = float(str(table_row.find('p', {'class': 'sc-e225a64a-0 eXVyON'}).text).replace('$', ''))
-            volume = float(str(table_row.find_all('p', {'class': 'sc-e225a64a-0 dFVWVA'})[1].text).replace(',', '.').replace('%', ''))
+            volume_percent = float(str(table_row.find_all('p', {'class': 'sc-e225a64a-0 dFVWVA'})[1].text).replace(',', '.').replace('%', ''))
+            volume_usd = float(str(table_row.find_all('p', {'class': 'sc-e225a64a-0 dFVWVA'})[0].text).replace(',', '').replace('$', ''))
         except BaseException:
             continue
         finally:
             if url != '':
-                trade_pairs.append(TradePairInfo(url_=url, price_=price, volume_=volume))
+                trade_pairs.append(TradePairInfo(url_=url, price_=price, volume_percent_=volume_percent, volume_usd_=volume_usd))
     return trade_pairs
 
 
@@ -108,14 +113,15 @@ if __name__ == '__main__':
                 for j in range(top_positions):
                     index, curr_vol = 0, -1
                     for i in range(len(trade_pairs)):
-                        if coin_dynamic > 0.0 and trade_pairs[i].get_price() < coin_price and trade_pairs[i].get_volume() > curr_vol:
-                            curr_vol = trade_pairs[i].get_volume()
+                        if coin_dynamic > 0.0 and trade_pairs[i].get_price() < coin_price and trade_pairs[i].get_volume_percent() > curr_vol:
+                            curr_vol = trade_pairs[i].get_volume_percent()
                             index = i
-                        elif coin_dynamic < 0.0 and trade_pairs[i].get_price() > coin_price and trade_pairs[i].get_volume() > curr_vol:
-                            curr_vol = trade_pairs[i].get_volume()
+                        elif coin_dynamic < 0.0 and trade_pairs[i].get_price() > coin_price and trade_pairs[i].get_volume_percent() > curr_vol:
+                            curr_vol = trade_pairs[i].get_volume_percent()
                             index = i
                     print(str(j + 1) + ')', trade_pairs[index].get_url() + ';',
-                          str(trade_pairs[index].get_price()) + '$;', str(trade_pairs[index].get_volume()) + '%')
+                          str(trade_pairs[index].get_price()) + '$;', str(trade_pairs[index].get_volume_percent()) +
+                          '% (' + str(trade_pairs[index].get_volume_usd()) + '$)')
                     trade_pairs.pop(index)
 
     # Program loop starting
