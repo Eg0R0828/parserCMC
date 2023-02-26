@@ -51,7 +51,8 @@ def alert_message_parse(event):
     coin_price = float(text.split('$')[1].split(' ')[0])
     coin_dynamic = float(text.split('%')[0].split(' ')[-1].replace('+', ''))
     coin_url = get_cmc_link(str(event.message.get_entities_text(MessageEntityTextUrl)[0][0].url))
-    return coin_name, coin_price, coin_dynamic, coin_url
+    sushiswap_url = str(event.message.get_entities_text(MessageEntityTextUrl)[1][0].url)
+    return coin_name, coin_price, coin_dynamic, coin_url, sushiswap_url
 
 
 def create_trade_pairs_list(coin_url):
@@ -93,19 +94,19 @@ if __name__ == '__main__':
     @client.on(events.NewMessage(chats=[chat_name]))
     async def message_event_handler(event):
         # Getting all interested data from the message text
-        coin_name, coin_url, coin_price, coin_dynamic = '', '', 0.0, 0.0
+        coin_name, coin_url, sushiswap_url, coin_price, coin_dynamic = '', '', '', 0.0, 0.0
         try:
             if str(event.raw_text).find('price changed') > -1:
-                (coin_name, coin_price, coin_dynamic, coin_url) = alert_message_parse(event)
+                (coin_name, coin_price, coin_dynamic, coin_url, sushiswap_url) = alert_message_parse(event)
                 print('Message text:\n' + str(event.raw_text))
         except BaseException:
             pass
         finally:
-            if coin_name != '' and coin_url != '' and coin_price != 0.0 and coin_dynamic != 0.0:
+            if coin_name != '' and coin_url != '' and sushiswap_url != '' and coin_price != 0.0 and coin_dynamic != 0.0:
                 # Switching to the "Markets" tab in the target website (coinmarketcap.com)
                 if coin_url.find('markets/') == -1: coin_url += 'markets/'
                 # Printing all input data
-                print('\nInterested data from message:\n' + coin_name, coin_price, coin_dynamic, coin_url)
+                print('\nInterested data from message:\n' + coin_name, coin_price, coin_dynamic, coin_url, sushiswap_url)
                 # Data collecting from the cmc-table with trade pairs
                 trade_pairs = create_trade_pairs_list(coin_url)
                 # Conditions checking and printing the best trade pair data
